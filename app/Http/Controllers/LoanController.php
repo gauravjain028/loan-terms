@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
+use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 
 class LoanController extends Controller
 {
@@ -73,6 +74,8 @@ class LoanController extends Controller
             $loan->repayments()->saveMany($repayments);
         }
 
+        $loan->repayments;
+
         return new JsonResponse($loan, Response::HTTP_CREATED);
     }
 
@@ -122,5 +125,67 @@ class LoanController extends Controller
 
         $loan->status = PaymentStatus::APPROVED;
         return new JsonResponse($loan);
+    }
+
+
+    /**
+     * Repay loan term.
+     *
+     * @param int $id
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function repay(Request $request, int $id) : JsonResponse
+    {
+        /** @var \App\Models\Loan $loan */
+        $loan = $this->repository->findByWith([
+            ['id', $id],
+            ['status', PaymentStatus::APPROVED]
+        ], ['repayments']);
+
+        if (!$loan) {
+            throw new BadRequestException('Loan does not exist or already paid.');
+        }
+        
+        Gate::authorize('view-loan', $loan);
+        
+        $repayment = $loan->repayments->where('status', PaymentStatus::PENDING->value)->first();
+        
+        if (!$repayment) {
+            throw new BadRequestException('This term Re-Payment already done or does not exist.');
+        }
+
+        $this->validate($request, [
+            'amount'  => 'required|numeric|gte:'.$repayment->amount,
+        ]);
+
+        $this->repaidTerm($loan, $repayment, $request->get('amount'));
+        
+        Gate::authorize('approve-loan', $loan);
+
+        $loan->status = PaymentStatus::APPROVED;
+        return new JsonResponse($loan);
+    }
+
+    protected function repaidTerm($loan, $repayment, $amount) : void
+    {
+        if ($amount < $repayment->amount) {
+            $repayment->amount = $amount;
+            $repayment->save();
+        } else {
+
+            $accessAmount = $repayment->amount - $amount;
+            $repayment->amount = $amount;
+            $repayment->status = PaymentStatus::PAID->value;
+            $repayment->save();
+
+            $repayment = $loan->refresh()->repayments->where('status', PaymentStatus::PENDING->value)->first();
+            if (!$repayment) {
+                $loan->status = PaymentStatus::PAID;
+                $loan->save();
+            } elseif ($accessAmount > 0) {
+                $this->repaidTerm($loan, $repayment, $accessAmount);
+            }
+        }
     }
 }
