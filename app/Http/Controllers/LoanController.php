@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Enums\PaymentStatus;
-use App\Models\Loan;
 use App\Models\Repayment;
 use App\Repositories\LoanRepositoryInterface;
 use Carbon\Carbon;
@@ -41,8 +40,8 @@ class LoanController extends Controller
     public function create(Request $request) : JsonResponse
     {
         $this->validate($request, [
-            'amount' => 'required|numeric|gte:0',
-            'terms'  => 'required|numeric|gte:0',
+            'amount' => 'required|numeric|gt:0',
+            'terms'  => 'required|numeric|gt:0',
         ]);
         
         $amount = $request->get('amount');

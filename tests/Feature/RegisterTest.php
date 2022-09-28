@@ -13,7 +13,7 @@ class RegisterTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function testRegisterTest_WhenInputValid_ReturnsToken() : void
+    public function testRegister_WhenInputValid_ReturnsToken() : void
     {
         $response = $this->postJson(route('register'), [
             'name'     => 'Foo',
@@ -27,7 +27,7 @@ class RegisterTest extends TestCase
         $this->assertDatabaseHas((new User())->getTable(), ['email' => 'foo@bar.com', 'type' => UserType::MEMBER->value]);
     }
 
-    public function testRegisterTest_WhenInputInvalid_ReturnsValidationErrors() : void
+    public function testRegister_WhenInputInvalid_ReturnsValidationErrors() : void
     {
         $response = $this->postJson(route('register'), [
             'name'     => 'Foo',
@@ -42,7 +42,7 @@ class RegisterTest extends TestCase
         $this->assertEquals('The password field is required.', $response->json('errors.password.0'));
     }
 
-    public function testRegisterTest_WhenUserAlreadyRegistered_ReturnsValidationError() : void
+    public function testRegister_WhenUserAlreadyRegistered_ReturnsValidationError() : void
     {
         User::factory()->create(['email' => 'foo@bar.com']);
 
