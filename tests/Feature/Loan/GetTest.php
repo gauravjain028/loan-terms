@@ -4,7 +4,6 @@ namespace Tests\Feature\Loan;
 
 use App\Models\Loan;
 use App\Models\User;
-use Carbon\Carbon;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -34,7 +33,7 @@ class GetTest extends TestCase
         $this->assertEquals($loan->id, $response->json('id'));
     }
 
-    public function testIndex_WhenInvalidUser_ReturnsAuthenticationError() : void
+    public function testGet_WhenInvalidUser_ReturnsAuthenticationError() : void
     {
         $user = User::factory()->create([
             'email'    => 'test@user.com',
@@ -55,7 +54,7 @@ class GetTest extends TestCase
         $response->assertStatus(Response::HTTP_FORBIDDEN);
     }
 
-    public function testIndex_WhenInvalidLoan_ReturnsAuthenticationError() : void
+    public function testGet_WhenInvalidLoan_ReturnsAuthenticationError() : void
     {
         $user = User::factory()->create([
             'email'    => 'test@user.com',
